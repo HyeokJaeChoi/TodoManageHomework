@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TodoManageHomework</string>
+
+    <!-- Appbar 액션 메뉴 -->
+    <string name="todo_sort_option_month">월간</string>
+    <string name="todo_sort_option_week">주간</string>
+    <string name="todo_sort_option_day">일간</string>
+</resources>
