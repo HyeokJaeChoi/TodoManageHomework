@@ -1,6 +1,8 @@
 package com.hyeok.todomanagehomework.util.sqlite
 
+import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.provider.BaseColumns
@@ -16,6 +18,43 @@ class DbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null,
             it.execSQL(DROP_TABLE)
             onCreate(it)
         }
+    }
+
+    fun select(tableName: String, projection: Array<String>?, selection: String?, selectionArgs: Array<String>?, group: String?, having: String?, sortOrder: String?): Cursor {
+        return readableDatabase.query(
+            tableName,
+            projection,
+            selection,
+            selectionArgs,
+            group,
+            having,
+            sortOrder
+        )
+    }
+
+    fun insert(tableName: String, values: ContentValues) {
+        writableDatabase.insert(
+            tableName,
+            null,
+            values
+        )
+    }
+
+    fun delete(tableName: String, selection: String?, selectionArgs: Array<String>?) {
+        writableDatabase.delete(
+            tableName,
+            selection,
+            selectionArgs
+        )
+    }
+
+    fun update(tableName: String, values: ContentValues, selection: String?, selectionArgs: Array<String>?) {
+        writableDatabase.update(
+            tableName,
+            values,
+            selection,
+            selectionArgs
+        )
     }
 
     companion object {
