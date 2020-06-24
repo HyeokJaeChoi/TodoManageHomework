@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
 
             }
             R.id.option_day -> {
-                
+
             }
         }
         return super.onOptionsItemSelected(item)
