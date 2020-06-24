@@ -12,5 +12,6 @@ object TodoContract {
         const val LATITUDE = "latitude"
         const val LONGITUDE = "longitude"
         const val CONTENT = "content"
+        const val MULTIMEDIA_CONTENT = "multimedia_content"
     }
 }

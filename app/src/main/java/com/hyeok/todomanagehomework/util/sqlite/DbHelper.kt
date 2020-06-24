@@ -70,7 +70,8 @@ class DbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null,
                     "${TodoContract.TodoEntry.END_TIME} TEXT," +
                     "${TodoContract.TodoEntry.LATITUDE} REAL," +
                     "${TodoContract.TodoEntry.LONGITUDE} REAL," +
-                    "${TodoContract.TodoEntry.CONTENT} TEXT)"
+                    "${TodoContract.TodoEntry.CONTENT} TEXT," +
+                    "${TodoContract.TodoEntry.MULTIMEDIA_CONTENT} TEXT)"
 
         private const val DROP_TABLE = "DROP TABLE IF EXISTS ${TodoContract.TodoEntry.TABLE_NAME}"
     }
