@@ -27,7 +27,7 @@ class TodoDetailActivity : AppCompatActivity() {
 
             }
             R.id.todo_detail_remove_btn -> {
-                
+
             }
         }
         return super.onOptionsItemSelected(item)
