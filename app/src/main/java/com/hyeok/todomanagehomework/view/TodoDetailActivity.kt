@@ -4,14 +4,12 @@ import android.Manifest
 import android.location.Geocoder
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.core.content.getSystemService
-import androidx.core.view.inputmethod.EditorInfoCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -28,7 +26,6 @@ import kotlinx.android.synthetic.main.activity_todo_detail.*
 import org.threeten.bp.LocalDateTime
 import splitties.toast.toast
 import java.util.*
-import kotlin.math.min
 
 class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReadyCallback {
 
@@ -37,7 +34,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
     private val fusedLocationProvider by lazy { LocationServices.getFusedLocationProviderClient(this) }
     private val geocoder by lazy { Geocoder(this, Locale.getDefault()) }
     private lateinit var googleMap: GoogleMap
-    private lateinit var initialUserLocation: LatLng
+    private lateinit var userLocation: LatLng
     private lateinit var mapMarker: Marker
     private val loadingDialog by lazy { LoadingDialog(this) }
 
@@ -69,13 +66,13 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                         val address = geocoder.getFromLocationName(searchPlace, 3)[0]
 
                         if(this::googleMap.isInitialized && this::mapMarker.isInitialized) {
-                            val searchLatLng = LatLng(address.latitude, address.longitude)
+                            userLocation = LatLng(address.latitude, address.longitude)
 
                             mapMarker.run {
-                                position = searchLatLng
+                                position = userLocation
                                 title = address.featureName
                             }
-                            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(searchLatLng, 15f))
+                            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15f))
                         }
                     }
                     else {
@@ -141,7 +138,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
         try {
             fusedLocationProvider.lastLocation
                 .addOnSuccessListener {
-                    initialUserLocation = LatLng(it.latitude, it.longitude)
+                    userLocation = LatLng(it.latitude, it.longitude)
                     setLayoutNewTodoAdd()
                 }
                 .addOnFailureListener {
@@ -168,14 +165,14 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
         }
 
         if(this::googleMap.isInitialized) {
-            if(!this::initialUserLocation.isInitialized) {
+            if(!this::userLocation.isInitialized) {
                 //서울시청을 기본 위치로 설정
-                initialUserLocation = LatLng(37.566257, 126.978020)
+                userLocation = LatLng(37.566257, 126.978020)
             }
 
             googleMap.run {
-                mapMarker = addMarker(MarkerOptions().position(initialUserLocation))
-                moveCamera(CameraUpdateFactory.newLatLngZoom(initialUserLocation, 15F))
+                mapMarker = addMarker(MarkerOptions().position(userLocation))
+                moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15F))
             }
         }
 
