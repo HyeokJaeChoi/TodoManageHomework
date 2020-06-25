@@ -27,6 +27,7 @@ class TodoDetailActivity : AppCompatActivity(), OnMapReadyCallback {
     private val fusedLocationProvider by lazy { LocationServices.getFusedLocationProviderClient(this) }
     private lateinit var googleMap: GoogleMap
     private lateinit var initialUserLocation: LatLng
+    private val loadingDialog by lazy { LoadingDialog(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
