@@ -1,6 +1,7 @@
 package com.hyeok.todomanagehomework.view
 
 import android.Manifest
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
 import android.location.Geocoder
@@ -8,6 +9,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.BaseColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -65,6 +67,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
     private val mediaPlayer by lazy { MediaPlayer() }
     private var currentMediaPlayerPosition = 0
     private lateinit var surfaceHolder: SurfaceHolder
+    private val existTodo by lazy { intent.extras?.getParcelable<Todo>(MainActivity.EXIST_TODO) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -183,7 +186,15 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 }
             }
             R.id.todo_detail_remove_btn -> {
+                existTodo?.let {
+                    dbHelper.delete(TodoContract.TodoEntry.TABLE_NAME, BaseColumns._ID + "=?", arrayOf(it.id.toString()))
 
+                    toast("일정을 삭제하였습니다.")
+                    setResult(RESULT_OK)
+                    finish()
+                } ?: run {
+                    toast("추가되지 않은 할일은 삭제할 수 없습니다.")
+                }
             }
         }
         return super.onOptionsItemSelected(item)
@@ -195,7 +206,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             googleMap.uiSettings.setAllGesturesEnabled(false)
         }
 
-        intent.extras?.getParcelable<Todo>(MainActivity.EXIST_TODO)?.let {
+        existTodo?.let {
             setLayoutExistTodo(it)
         } ?: run {
             checkLocationPermission()

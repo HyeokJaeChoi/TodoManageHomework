@@ -4,7 +4,8 @@ import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 
 @Parcelize
-data class Todo (
+data class Todo(
+    val id: Int,
     val title: String,
     val date: String,
     val startTime: String,

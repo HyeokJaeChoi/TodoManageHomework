@@ -1,10 +1,10 @@
 package com.hyeok.todomanagehomework.view
 
-import android.app.Activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.provider.BaseColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -88,7 +88,6 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        Log.d(javaClass.simpleName, "$requestCode $resultCode")
         if(requestCode == REQUEST_TODO_DETAIL && resultCode == RESULT_OK) {
             initTodoList()
         }
@@ -174,6 +173,7 @@ class MainActivity : AppCompatActivity() {
 
                     dbHelper.select(query).run {
                         while(moveToNext()) {
+                            val id = getInt(getColumnIndexOrThrow(BaseColumns._ID))
                             val title = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.TITLE))
                             val date = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.DATE))
                             val startTime = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.START_TIME))
@@ -184,6 +184,7 @@ class MainActivity : AppCompatActivity() {
                             val multimediaContentUri = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI))
 
                             val todo = Todo(
+                                id,
                                 title,
                                 date,
                                 startTime,
@@ -291,6 +292,7 @@ class MainActivity : AppCompatActivity() {
 
                 dbHelper.select(query).run {
                     while(moveToNext()) {
+                        val id = getInt(getColumnIndexOrThrow(BaseColumns._ID))
                         val title = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.TITLE))
                         val date = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.DATE))
                         val startTime = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.START_TIME))
@@ -301,6 +303,7 @@ class MainActivity : AppCompatActivity() {
                         val multimediaContentUri = getString(getColumnIndexOrThrow(TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI))
 
                         val todo = Todo(
+                            id,
                             title,
                             date,
                             startTime,
