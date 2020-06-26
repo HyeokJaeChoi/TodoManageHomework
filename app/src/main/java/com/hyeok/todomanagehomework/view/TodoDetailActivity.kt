@@ -1,15 +1,26 @@
 package com.hyeok.todomanagehomework.view
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.location.Geocoder
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import androidx.core.content.getSystemService
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -21,9 +32,16 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import com.hyeok.todomanagehomework.R
+import com.hyeok.todomanagehomework.util.file.DocumentUriConverter
 import com.hyeok.todomanagehomework.util.sqlite.DbHelper
+import com.hyeok.todomanagehomework.util.validator.UriValidator
 import kotlinx.android.synthetic.main.activity_todo_detail.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalDateTime
+import splitties.lifecycle.coroutines.MainAndroid
 import splitties.toast.toast
 import java.util.*
 
@@ -37,6 +55,14 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
     private lateinit var userLocation: LatLng
     private lateinit var mapMarker: Marker
     private val loadingDialog by lazy { LoadingDialog(this) }
+    private var isMultimediaDataSelected = false
+        set(value) {
+            field = value
+            if(value && todo_detail_multimedia_memo_add_btn.text.toString() == getString(R.string.todo_detail_multimedia_memo_add)) {
+                todo_detail_multimedia_memo_add_btn.text = getString(R.string.todo_detail_multimedia_memo_replace)
+            }
+        }
+    private var lastSelectedMultimediaType = MULTIMEDIA_TYPE_NONE
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,7 +111,50 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 loadingDialog.show()
             }
             R.id.todo_detail_multimedia_memo_add_btn -> {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                }
 
+                startActivityForResult(intent, REQUEST_SYSTEM_PICKER)
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if(requestCode == REQUEST_SYSTEM_PICKER && resultCode == RESULT_OK && data != null) {
+            data.data?.let {
+                when {
+                    UriValidator.isImageUri(it) -> {
+                        changeMultimediaViewVisibility(MULTIMEDIA_TYPE_IMAGE)
+                        
+                        GlobalScope.launch {
+                            withContext(Dispatchers.IO) {
+                                DocumentUriConverter.getBitmapFromContentUri(this@TodoDetailActivity, it)?.let {
+                                    Log.d(javaClass.simpleName, "${it.width} ${it.height}")
+                                    withContext(Dispatchers.Main) {
+                                        Glide.with(this@TodoDetailActivity)
+                                            .load(it)
+                                            .into(todo_detail_multimedia_data_img)
+
+                                        isMultimediaDataSelected = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    UriValidator.isAudioUri(it) -> {
+
+                    }
+                    UriValidator.isVideoUri(it) -> {
+
+                    }
+                    else -> {
+                        toast("이미지 / 오디오 / 비디오 타입의 파일을 선택해주세요.")
+                    }
+                }
             }
         }
     }
@@ -177,5 +246,46 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
         }
 
         todo_detail_multimedia_memo_add_btn.text = getString(R.string.todo_detail_multimedia_memo_add)
+    }
+
+    private fun changeMultimediaViewVisibility(multimediaType: Int) {
+        if(lastSelectedMultimediaType != MULTIMEDIA_TYPE_NONE) {
+            when(lastSelectedMultimediaType) {
+                MULTIMEDIA_TYPE_IMAGE -> {
+                    todo_detail_multimedia_data_img.run {
+                        setImageResource(0)
+                        visibility = View.GONE
+                    }
+                }
+                MULTIMEDIA_TYPE_AUDIO -> {
+
+                }
+                MULTIMEDIA_TYPE_VIDEO -> {
+
+                }
+            }
+        }
+
+        when(multimediaType) {
+            MULTIMEDIA_TYPE_IMAGE -> {
+                todo_detail_multimedia_data_img.visibility = View.VISIBLE
+            }
+            MULTIMEDIA_TYPE_AUDIO -> {
+
+            }
+            MULTIMEDIA_TYPE_VIDEO -> {
+
+            }
+        }
+
+        lastSelectedMultimediaType = multimediaType
+    }
+
+    companion object {
+        const val REQUEST_SYSTEM_PICKER = 1
+        const val MULTIMEDIA_TYPE_NONE = 100
+        const val MULTIMEDIA_TYPE_IMAGE = 101
+        const val MULTIMEDIA_TYPE_AUDIO = 102
+        const val MULTIMEDIA_TYPE_VIDEO = 103
     }
 }
