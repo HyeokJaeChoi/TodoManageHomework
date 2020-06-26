@@ -32,6 +32,10 @@ class DbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null,
         )
     }
 
+    fun select(tableName: String, rawQuery: String): Cursor {
+        return readableDatabase.rawQuery(rawQuery, null)
+    }
+
     fun insert(tableName: String, values: ContentValues) {
         writableDatabase.insert(
             tableName,
