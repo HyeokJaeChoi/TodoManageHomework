@@ -21,4 +21,12 @@
     <string name="todo_detail_multimedia_memo_add">추가</string>
     <string name="todo_detail_multimedia_memo_replace">변경</string>
     <string name="title_activity_maps">Map</string>
+
+    <!-- 새로운 상세일정 저장 중 안내 메세지 -->
+    <string name="todo_detail_save_fail_title_empty">제목을 입력해주세요.</string>
+    <string name="todo_detail_save_fail_date_is_before_than_current">현재 날짜를 포함한 이후 날짜를 선택해주세요.</string>
+    <string name="todo_detail_save_fail_start_time_is_after_than_end_time">시작 시간을 종료 시간 이전으로 선택해주세요.</string>
+    <string name="todo_detail_save_fail_not_selected_place">장소를 선택해주세요.</string>
+    <string name="todo_detail_save_fail_memo_content_empty">메모 내용을 입력해주세요.</string>
+    <string name="todo_detail_save_success">메모가 저장되었습니다.</string>
 </resources>

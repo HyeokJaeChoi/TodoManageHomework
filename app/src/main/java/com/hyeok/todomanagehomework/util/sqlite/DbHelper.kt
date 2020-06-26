@@ -64,13 +64,13 @@ class DbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null,
         private const val SQL_CREATE_ENTRIES =
             "CREATE TABLE ${TodoContract.TodoEntry.TABLE_NAME} (" +
                     "${BaseColumns._ID} INTEGER PRIMARY KEY," +
-                    "${TodoContract.TodoEntry.TITLE} TEXT," +
-                    "${TodoContract.TodoEntry.DATE} TEXT," +
-                    "${TodoContract.TodoEntry.START_TIME} TEXT," +
-                    "${TodoContract.TodoEntry.END_TIME} TEXT," +
+                    "${TodoContract.TodoEntry.TITLE} TEXT NOT NULL," +
+                    "${TodoContract.TodoEntry.DATE} TEXT NOT NULL," +
+                    "${TodoContract.TodoEntry.START_TIME} TEXT NOT NULL," +
+                    "${TodoContract.TodoEntry.END_TIME} TEXT NOT NULL," +
                     "${TodoContract.TodoEntry.LATITUDE} REAL," +
                     "${TodoContract.TodoEntry.LONGITUDE} REAL," +
-                    "${TodoContract.TodoEntry.CONTENT} TEXT," +
+                    "${TodoContract.TodoEntry.CONTENT} TEXT NOT NULL," +
                     "${TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI} TEXT)"
 
         private const val DROP_TABLE = "DROP TABLE IF EXISTS ${TodoContract.TodoEntry.TABLE_NAME}"

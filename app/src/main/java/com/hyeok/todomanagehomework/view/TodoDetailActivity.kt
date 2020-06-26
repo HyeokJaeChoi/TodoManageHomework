@@ -1,17 +1,14 @@
 package com.hyeok.todomanagehomework.view
 
 import android.Manifest
-import android.app.Activity
+import android.content.ContentValues
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.location.Geocoder
 import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.DocumentsContract
-import android.provider.MediaStore
+import android.provider.BaseColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -19,13 +16,8 @@ import android.view.SurfaceHolder
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.MediaController
 import androidx.core.content.getSystemService
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
-import com.bumptech.glide.request.target.Target
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -39,6 +31,7 @@ import com.gun0912.tedpermission.TedPermission
 import com.hyeok.todomanagehomework.R
 import com.hyeok.todomanagehomework.util.file.DocumentUriConverter
 import com.hyeok.todomanagehomework.util.sqlite.DbHelper
+import com.hyeok.todomanagehomework.util.sqlite.TodoContract
 import com.hyeok.todomanagehomework.util.validator.UriValidator
 import kotlinx.android.synthetic.main.activity_todo_detail.*
 import kotlinx.coroutines.Dispatchers
@@ -46,15 +39,14 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalDateTime
-import splitties.lifecycle.coroutines.MainAndroid
 import splitties.toast.toast
-import java.io.FileInputStream
 import java.util.*
 
 class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReadyCallback {
 
     private val imm by lazy { getSystemService<InputMethodManager>() }
     private val dbHelper by lazy { DbHelper(this) }
+    private val currentDateTime by lazy { LocalDateTime.now() }
     private val fusedLocationProvider by lazy { LocationServices.getFusedLocationProviderClient(this) }
     private val geocoder by lazy { Geocoder(this, Locale.getDefault()) }
     private lateinit var googleMap: GoogleMap
@@ -69,6 +61,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             }
         }
     private var lastSelectedMultimediaType = MULTIMEDIA_TYPE_NONE
+    private lateinit var lastSelectedMultimediaUri: Uri
     private val mediaPlayer by lazy { MediaPlayer() }
     private var currentMediaPlayerPosition = 0
     private lateinit var surfaceHolder: SurfaceHolder
@@ -88,6 +81,31 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 }
             }
             true
+        }
+
+        dbHelper.select(
+            TodoContract.TodoEntry.TABLE_NAME,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )?.let {
+            while(it.moveToNext()) {
+                val itemId = it.getLong(it.getColumnIndexOrThrow(BaseColumns._ID))
+                val title = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.TITLE))
+                val date = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.DATE))
+                val startTime = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.START_TIME))
+                val endTime = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.END_TIME))
+                val latitude = it.getDouble(it.getColumnIndexOrThrow(TodoContract.TodoEntry.LATITUDE))
+                val longitude = it.getDouble(it.getColumnIndexOrThrow(TodoContract.TodoEntry.LONGITUDE))
+                val content = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.CONTENT))
+                val multimediaContentUri = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI))
+
+                Log.d(javaClass.simpleName, "${itemId} ${title} ${date} ${startTime} ${endTime} ${latitude} ${longitude} ${content} ${multimediaContentUri}")
+            }
+            it.close()
         }
     }
 
@@ -146,14 +164,14 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
 
                         GlobalScope.launch {
                             withContext(Dispatchers.IO) {
-                                DocumentUriConverter.getBitmapFromContentUri(this@TodoDetailActivity, it)?.let {
-                                    Log.d(javaClass.simpleName, "${it.width} ${it.height}")
+                                DocumentUriConverter.getBitmapFromContentUri(this@TodoDetailActivity, it)?.let { bitmap ->
                                     withContext(Dispatchers.Main) {
                                         Glide.with(this@TodoDetailActivity)
-                                            .load(it)
+                                            .load(bitmap)
                                             .into(todo_detail_multimedia_data_img)
 
                                         isMultimediaDataSelected = true
+                                        lastSelectedMultimediaUri = it
                                     }
                                 }
                             }
@@ -163,12 +181,15 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                         mediaPlayer.reset()
                         changeMultimediaViewVisibility(MULTIMEDIA_TYPE_AUDIO)
 
-                        contentResolver.openFileDescriptor(it, "r")?.fileDescriptor?.let {
+                        contentResolver.openFileDescriptor(it, "r")?.fileDescriptor?.let { fileDescriptor ->
                             mediaPlayer.run {
-                                setDataSource(it)
+                                setDataSource(fileDescriptor)
                                 prepare()
                             }
                             setPlayPauseStopBtnOnClicked()
+
+                            isMultimediaDataSelected = true
+                            lastSelectedMultimediaUri = it
                         }
                     }
                     UriValidator.isVideoUri(it) -> {
@@ -216,7 +237,31 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when(item.itemId) {
             R.id.todo_detail_save_btn -> {
+                val saveFailMessage = getErrorMessageForSaveMemo()
 
+                if(saveFailMessage.isNotEmpty()) {
+                    toast(saveFailMessage)
+                }
+                else {
+                    val selectedDate = todo_detail_date_picker.year.toString() + "-" + todo_detail_date_picker.month.toString() + "-" + todo_detail_date_picker.dayOfMonth.toString()
+                    val startTime = todo_detail_start_time_picker.hour.toString() + ":" + todo_detail_start_time_picker.minute.toString()
+                    val endTime = todo_detail_end_time_picker.hour.toString() + ":" + todo_detail_end_time_picker.minute.toString()
+                    val contentValues = ContentValues().apply {
+                        put(TodoContract.TodoEntry.TITLE, todo_detail_title_input_filed.text.toString())
+                        put(TodoContract.TodoEntry.DATE, selectedDate)
+                        put(TodoContract.TodoEntry.START_TIME, startTime)
+                        put(TodoContract.TodoEntry.END_TIME, endTime)
+                        put(TodoContract.TodoEntry.LATITUDE, userLocation.latitude)
+                        put(TodoContract.TodoEntry.LONGITUDE, userLocation.longitude)
+                        put(TodoContract.TodoEntry.CONTENT, todo_detail_memo_input_field.text.toString())
+                        if(this@TodoDetailActivity::lastSelectedMultimediaUri.isInitialized) {
+                            put(TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI, lastSelectedMultimediaUri.toString())
+                        }
+                    }
+
+                    dbHelper.insert(TodoContract.TodoEntry.TABLE_NAME, contentValues)
+                    toast(getString(R.string.todo_detail_save_success))
+                }
             }
             R.id.todo_detail_remove_btn -> {
 
@@ -264,8 +309,6 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
     }
 
     private fun setLayoutNewTodoAdd() {
-        val currentDateTime = LocalDateTime.now()
-
         todo_detail_date_picker.updateDate(currentDateTime.year, currentDateTime.monthValue.minus(1), currentDateTime.dayOfMonth)
         todo_detail_start_time_picker.run {
             setIs24HourView(true)
@@ -369,6 +412,33 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 }
             }
             setPlayPauseStopBtnOnClicked()
+
+            isMultimediaDataSelected = true
+            lastSelectedMultimediaUri = uri
+        }
+    }
+
+    private fun getErrorMessageForSaveMemo(): String {
+        if(todo_detail_title_input_filed.text.isEmpty()) {
+            return getString(R.string.todo_detail_save_fail_title_empty)
+        }
+        else if(todo_detail_date_picker.year < currentDateTime.year
+            || todo_detail_date_picker.month < currentDateTime.monthValue.minus(1)
+            || todo_detail_date_picker.dayOfMonth < currentDateTime.dayOfMonth) {
+            return getString(R.string.todo_detail_save_fail_date_is_before_than_current)
+        }
+        else if(todo_detail_start_time_picker.hour > todo_detail_end_time_picker.hour
+            || (todo_detail_start_time_picker.hour == todo_detail_end_time_picker.hour && todo_detail_start_time_picker.minute > todo_detail_end_time_picker.minute)) {
+            return getString(R.string.todo_detail_save_fail_start_time_is_after_than_end_time)
+        }
+        else if(!this::userLocation.isInitialized) {
+            return getString(R.string.todo_detail_save_fail_not_selected_place)
+        }
+        else if(todo_detail_memo_input_field.text.isEmpty()) {
+            return getString(R.string.todo_detail_save_fail_memo_content_empty)
+        }
+        else {
+            return ""
         }
     }
 
