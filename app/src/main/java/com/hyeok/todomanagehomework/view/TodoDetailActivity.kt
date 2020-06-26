@@ -243,9 +243,9 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                     toast(saveFailMessage)
                 }
                 else {
-                    val selectedDate = todo_detail_date_picker.year.toString() + "-" + todo_detail_date_picker.month.toString() + "-" + todo_detail_date_picker.dayOfMonth.toString()
-                    val startTime = todo_detail_start_time_picker.hour.toString() + ":" + todo_detail_start_time_picker.minute.toString()
-                    val endTime = todo_detail_end_time_picker.hour.toString() + ":" + todo_detail_end_time_picker.minute.toString()
+                    val selectedDate = todo_detail_date_picker.year.zeroFormat() + "-" + todo_detail_date_picker.month.zeroFormat() + "-" + todo_detail_date_picker.dayOfMonth.zeroFormat()
+                    val startTime = todo_detail_start_time_picker.hour.zeroFormat() + ":" + todo_detail_start_time_picker.minute.zeroFormat()
+                    val endTime = todo_detail_end_time_picker.hour.zeroFormat() + ":" + todo_detail_end_time_picker.minute.zeroFormat()
                     val contentValues = ContentValues().apply {
                         put(TodoContract.TodoEntry.TITLE, todo_detail_title_input_filed.text.toString())
                         put(TodoContract.TodoEntry.DATE, selectedDate)
@@ -440,6 +440,10 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
         else {
             return ""
         }
+    }
+
+    private fun Int.zeroFormat(): String {
+        return String.format("%02d", this)
     }
 
     companion object {

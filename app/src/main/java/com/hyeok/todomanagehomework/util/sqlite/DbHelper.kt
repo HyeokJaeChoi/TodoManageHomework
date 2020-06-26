@@ -32,7 +32,7 @@ class DbHelper(context: Context): SQLiteOpenHelper(context, DATABASE_NAME, null,
         )
     }
 
-    fun select(tableName: String, rawQuery: String): Cursor {
+    fun select(rawQuery: String): Cursor {
         return readableDatabase.rawQuery(rawQuery, null)
     }
 
