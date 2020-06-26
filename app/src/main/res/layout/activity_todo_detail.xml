@@ -204,18 +204,45 @@
                 />
 
             <ImageView
-                android:id="@+id/todo_detail_multimedia_data_audio_play_btn"
+                android:id="@+id/todo_detail_multimedia_data_audio_video_play_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
                 android:visibility="gone"
                 android:src="@drawable/ic_play_36dp"
                 />
 
+            <ImageView
+                android:id="@+id/todo_detail_multimedia_data_audio_video_pause_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:visibility="gone"
+                android:src="@drawable/ic_pause_36dp"
+                android:layout_marginStart="8dp"
+                app:layout_constraintStart_toEndOf="@id/todo_detail_multimedia_data_audio_video_play_btn"
+                />
+
+            <ImageView
+                android:id="@+id/todo_detail_multimedia_data_audio_video_stop_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:visibility="gone"
+                android:src="@drawable/ic_stop_36dp"
+                android:layout_marginStart="8dp"
+                app:layout_constraintStart_toEndOf="@id/todo_detail_multimedia_data_audio_video_pause_btn"
+                />
+
             <VideoView
                 android:id="@+id/todo_detail_multimedia_data_video"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
+                android:layout_marginTop="12dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/todo_detail_multimedia_data_audio_video_play_btn"
                 />
 
         </androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,9 +6,12 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.location.Geocoder
+import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -43,6 +46,7 @@ import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalDateTime
 import splitties.lifecycle.coroutines.MainAndroid
 import splitties.toast.toast
+import java.io.FileInputStream
 import java.util.*
 
 class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReadyCallback {
@@ -63,6 +67,8 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             }
         }
     private var lastSelectedMultimediaType = MULTIMEDIA_TYPE_NONE
+    private val mediaPlayer by lazy { MediaPlayer() }
+    private var currentMediaPlayerPosition = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,7 +135,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 when {
                     UriValidator.isImageUri(it) -> {
                         changeMultimediaViewVisibility(MULTIMEDIA_TYPE_IMAGE)
-                        
+
                         GlobalScope.launch {
                             withContext(Dispatchers.IO) {
                                 DocumentUriConverter.getBitmapFromContentUri(this@TodoDetailActivity, it)?.let {
@@ -146,7 +152,32 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                         }
                     }
                     UriValidator.isAudioUri(it) -> {
+                        changeMultimediaViewVisibility(MULTIMEDIA_TYPE_AUDIO)
 
+                        contentResolver.openFileDescriptor(it, "r")?.fileDescriptor?.let {
+                            mediaPlayer.run {
+                                setDataSource(it)
+                                prepare()
+                            }
+                            todo_detail_multimedia_data_audio_video_play_btn.setOnClickListener {
+                                if(currentMediaPlayerPosition > 0) {
+                                    mediaPlayer.seekTo(currentMediaPlayerPosition)
+                                }
+                                mediaPlayer.start()
+                            }
+                            todo_detail_multimedia_data_audio_video_pause_btn.setOnClickListener {
+                                mediaPlayer.run {
+                                    pause()
+                                    currentMediaPlayerPosition = currentPosition
+                                }
+                            }
+                            todo_detail_multimedia_data_audio_video_stop_btn.setOnClickListener {
+                                mediaPlayer.run {
+                                    pause()
+                                    currentMediaPlayerPosition = 0
+                                }
+                            }
+                        }
                     }
                     UriValidator.isVideoUri(it) -> {
 
@@ -258,7 +289,9 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                     }
                 }
                 MULTIMEDIA_TYPE_AUDIO -> {
-
+                    todo_detail_multimedia_data_audio_video_play_btn.visibility = View.GONE
+                    todo_detail_multimedia_data_audio_video_pause_btn.visibility = View.GONE
+                    todo_detail_multimedia_data_audio_video_stop_btn.visibility = View.GONE
                 }
                 MULTIMEDIA_TYPE_VIDEO -> {
 
@@ -271,7 +304,9 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 todo_detail_multimedia_data_img.visibility = View.VISIBLE
             }
             MULTIMEDIA_TYPE_AUDIO -> {
-
+                todo_detail_multimedia_data_audio_video_play_btn.visibility = View.VISIBLE
+                todo_detail_multimedia_data_audio_video_pause_btn.visibility = View.VISIBLE
+                todo_detail_multimedia_data_audio_video_stop_btn.visibility = View.VISIBLE
             }
             MULTIMEDIA_TYPE_VIDEO -> {
 
