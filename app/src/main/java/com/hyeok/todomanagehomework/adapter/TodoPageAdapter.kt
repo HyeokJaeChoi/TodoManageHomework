@@ -10,7 +10,7 @@ import com.hyeok.todomanagehomework.model.Todo
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.todo_list_page_item.view.*
 
-class TodoPageAdapter(val todoPages: MutableList<MutableList<Todo>>, val onClick: (View) -> Unit): RecyclerView.Adapter<TodoPageAdapter.ViewHolder>() {
+class TodoPageAdapter(val todoPages: MutableList<MutableList<Todo>>, val onClick: (Todo) -> Unit): RecyclerView.Adapter<TodoPageAdapter.ViewHolder>() {
 
     override fun getItemCount(): Int {
         return todoPages.size
@@ -26,7 +26,7 @@ class TodoPageAdapter(val todoPages: MutableList<MutableList<Todo>>, val onClick
     }
 
     class ViewHolder(override val containerView: View): RecyclerView.ViewHolder(containerView), LayoutContainer {
-        fun bindTo(todoPage: MutableList<Todo>, onClick: (View) -> Unit) {
+        fun bindTo(todoPage: MutableList<Todo>, onClick: (Todo) -> Unit) {
             containerView.todo_list.run {
                 layoutManager = LinearLayoutManager(context)
                 setHasFixedSize(false)

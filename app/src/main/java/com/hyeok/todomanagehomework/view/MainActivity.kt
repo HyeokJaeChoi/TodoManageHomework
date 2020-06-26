@@ -222,7 +222,10 @@ class MainActivity : AppCompatActivity() {
 
             todo_list_slider.run {
                 adapter = TodoPageAdapter(todoLists) {
-
+                    val intent = Intent(this@MainActivity, TodoDetailActivity::class.java).apply {
+                        putExtra(EXIST_TODO, it)
+                    }
+                    startActivityForResult(intent, REQUEST_TODO_DETAIL)
                 }
                 Handler().postDelayed({
                     setCurrentItem(currentPagePos, false)
@@ -409,5 +412,6 @@ class MainActivity : AppCompatActivity() {
         const val REQUEST_TODO_DETAIL = 1
         const val DATE_BEFORE = "dateBefore"
         const val DATE_AFTER = "dateAfter"
+        const val EXIST_TODO = "existTodo"
     }
 }

@@ -9,7 +9,7 @@ import com.hyeok.todomanagehomework.model.Todo
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.todo_item.view.*
 
-class TodoAdapter(val todoList: MutableList<Todo>, val onClick: (View) -> Unit): RecyclerView.Adapter<TodoAdapter.ViewHolder>() {
+class TodoAdapter(val todoList: MutableList<Todo>, val onClick: (Todo) -> Unit): RecyclerView.Adapter<TodoAdapter.ViewHolder>() {
 
     override fun getItemCount(): Int {
         return todoList.size
@@ -25,11 +25,13 @@ class TodoAdapter(val todoList: MutableList<Todo>, val onClick: (View) -> Unit):
     }
 
     class ViewHolder(override val containerView: View): RecyclerView.ViewHolder(containerView), LayoutContainer {
-        fun bindTo(todo: Todo, onClick: (View) -> Unit) {
+        fun bindTo(todo: Todo, onClick: (Todo) -> Unit) {
             containerView.run {
                 todo_date.text = todo.date
                 todo_title.text = todo.title
-                setOnClickListener(onClick)
+                setOnClickListener {
+                    onClick(todo)
+                }
             }
         }
     }

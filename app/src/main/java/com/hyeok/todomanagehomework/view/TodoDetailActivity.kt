@@ -1,7 +1,6 @@
 package com.hyeok.todomanagehomework.view
 
 import android.Manifest
-import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
 import android.location.Geocoder
@@ -9,7 +8,6 @@ import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.BaseColumns
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -135,70 +133,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
 
         if(requestCode == REQUEST_SYSTEM_PICKER && resultCode == RESULT_OK && data != null) {
             data.data?.let {
-                when {
-                    UriValidator.isImageUri(it) -> {
-                        changeMultimediaViewVisibility(MULTIMEDIA_TYPE_IMAGE)
-
-                        GlobalScope.launch {
-                            withContext(Dispatchers.IO) {
-                                DocumentUriConverter.getBitmapFromContentUri(this@TodoDetailActivity, it)?.let { bitmap ->
-                                    withContext(Dispatchers.Main) {
-                                        Glide.with(this@TodoDetailActivity)
-                                            .load(bitmap)
-                                            .into(todo_detail_multimedia_data_img)
-
-                                        isMultimediaDataSelected = true
-                                        lastSelectedMultimediaUri = it
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    UriValidator.isAudioUri(it) -> {
-                        mediaPlayer.reset()
-                        changeMultimediaViewVisibility(MULTIMEDIA_TYPE_AUDIO)
-
-                        contentResolver.openFileDescriptor(it, "r")?.fileDescriptor?.let { fileDescriptor ->
-                            mediaPlayer.run {
-                                setDataSource(fileDescriptor)
-                                prepare()
-                            }
-                            setPlayPauseStopBtnOnClicked()
-
-                            isMultimediaDataSelected = true
-                            lastSelectedMultimediaUri = it
-                        }
-                    }
-                    UriValidator.isVideoUri(it) -> {
-                        mediaPlayer.reset()
-                        changeMultimediaViewVisibility(MULTIMEDIA_TYPE_VIDEO)
-
-                        surfaceHolder = todo_detail_multimedia_data_video.holder.apply {
-                            addCallback(object : SurfaceHolder.Callback {
-                                override fun surfaceCreated(holder: SurfaceHolder?) {
-                                    Log.d(this@TodoDetailActivity.javaClass.simpleName, "surfaceCreated")
-                                    onVideoSelected(it)
-                                }
-
-                                override fun surfaceChanged(
-                                    holder: SurfaceHolder?,
-                                    format: Int,
-                                    width: Int,
-                                    height: Int
-                                ) {
-
-                                }
-
-                                override fun surfaceDestroyed(holder: SurfaceHolder?) {
-
-                                }
-                            })
-                        }
-                    }
-                    else -> {
-                        toast("이미지 / 오디오 / 비디오 타입의 파일을 선택해주세요.")
-                    }
-                }
+                handleMultimediaUri(it)
             }
         }
     }
@@ -258,7 +193,79 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
         p0?.let {
             googleMap = it
             googleMap.uiSettings.setAllGesturesEnabled(false)
+        }
+
+        intent.extras?.getParcelable<Todo>(MainActivity.EXIST_TODO)?.let {
+            setLayoutExistTodo(it)
+        } ?: run {
             checkLocationPermission()
+        }
+    }
+
+    private fun handleMultimediaUri(uri: Uri) {
+        when {
+            UriValidator.isImageUri(uri) -> {
+                changeMultimediaViewVisibility(MULTIMEDIA_TYPE_IMAGE)
+
+                GlobalScope.launch {
+                    withContext(Dispatchers.IO) {
+                        DocumentUriConverter.getBitmapFromContentUri(this@TodoDetailActivity, uri)?.let { bitmap ->
+                            withContext(Dispatchers.Main) {
+                                Glide.with(this@TodoDetailActivity)
+                                    .load(bitmap)
+                                    .into(todo_detail_multimedia_data_img)
+
+                                isMultimediaDataSelected = true
+                                lastSelectedMultimediaUri = uri
+                            }
+                        }
+                    }
+                }
+            }
+            UriValidator.isAudioUri(uri) -> {
+                mediaPlayer.reset()
+                changeMultimediaViewVisibility(MULTIMEDIA_TYPE_AUDIO)
+
+                contentResolver.openFileDescriptor(uri, "r")?.fileDescriptor?.let { fileDescriptor ->
+                    mediaPlayer.run {
+                        setDataSource(fileDescriptor)
+                        prepare()
+                    }
+                    setPlayPauseStopBtnOnClicked()
+
+                    isMultimediaDataSelected = true
+                    lastSelectedMultimediaUri = uri
+                }
+            }
+            UriValidator.isVideoUri(uri) -> {
+                mediaPlayer.reset()
+                changeMultimediaViewVisibility(MULTIMEDIA_TYPE_VIDEO)
+
+                surfaceHolder = todo_detail_multimedia_data_video.holder.apply {
+                    addCallback(object : SurfaceHolder.Callback {
+                        override fun surfaceCreated(holder: SurfaceHolder?) {
+                            Log.d(this@TodoDetailActivity.javaClass.simpleName, "surfaceCreated")
+                            onVideoSelected(uri)
+                        }
+
+                        override fun surfaceChanged(
+                            holder: SurfaceHolder?,
+                            format: Int,
+                            width: Int,
+                            height: Int
+                        ) {
+
+                        }
+
+                        override fun surfaceDestroyed(holder: SurfaceHolder?) {
+
+                        }
+                    })
+                }
+            }
+            else -> {
+                toast("이미지 / 오디오 / 비디오 타입의 파일을 선택해주세요.")
+            }
         }
     }
 
@@ -314,6 +321,43 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             googleMap.run {
                 mapMarker = addMarker(MarkerOptions().position(userLocation))
                 moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15F))
+            }
+        }
+
+        todo_detail_multimedia_memo_add_btn.text = getString(R.string.todo_detail_multimedia_memo_add)
+    }
+
+    private fun setLayoutExistTodo(todo: Todo) {
+        todo.run {
+            val dateSplit = date.split("-")
+            val startTimeSplit = startTime.split(":")
+            val endTimeSplit = endTime.split(":")
+
+            todo_detail_title_input_filed.setText(title)
+            todo_detail_date_picker.updateDate(dateSplit[0].toInt(), dateSplit[1].toInt().minus(1), dateSplit[2].toInt())
+            todo_detail_start_time_picker.run {
+                setIs24HourView(true)
+                hour = startTimeSplit[0].toInt()
+                minute = startTimeSplit[1].toInt()
+            }
+            todo_detail_end_time_picker.run {
+                setIs24HourView(true)
+                hour = endTimeSplit[0].toInt()
+                minute = endTimeSplit[1].toInt()
+            }
+            todo_detail_memo_input_field.setText(content)
+
+            if(this@TodoDetailActivity::googleMap.isInitialized) {
+                val position = LatLng(latitude, longitude)
+
+                googleMap.run {
+                    addMarker(MarkerOptions().position(position))
+                    moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15F))
+                }
+            }
+
+            if(multimediaContentUri != null) {
+                handleMultimediaUri(Uri.parse(multimediaContentUri))
             }
         }
 
@@ -436,6 +480,5 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
         const val MULTIMEDIA_TYPE_IMAGE = 101
         const val MULTIMEDIA_TYPE_AUDIO = 102
         const val MULTIMEDIA_TYPE_VIDEO = 103
-        const val INSERTED_TODO = "insertedTodo"
     }
 }
