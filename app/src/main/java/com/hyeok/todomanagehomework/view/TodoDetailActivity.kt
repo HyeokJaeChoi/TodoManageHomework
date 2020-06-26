@@ -15,9 +15,11 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.SurfaceHolder
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.widget.MediaController
 import androidx.core.content.getSystemService
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -69,6 +71,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
     private var lastSelectedMultimediaType = MULTIMEDIA_TYPE_NONE
     private val mediaPlayer by lazy { MediaPlayer() }
     private var currentMediaPlayerPosition = 0
+    private lateinit var surfaceHolder: SurfaceHolder
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +89,11 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             }
             true
         }
+    }
+
+    override fun onDestroy() {
+        mediaPlayer.release()
+        super.onDestroy()
     }
 
     override fun onClick(v: View?) {
@@ -152,6 +160,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                         }
                     }
                     UriValidator.isAudioUri(it) -> {
+                        mediaPlayer.reset()
                         changeMultimediaViewVisibility(MULTIMEDIA_TYPE_AUDIO)
 
                         contentResolver.openFileDescriptor(it, "r")?.fileDescriptor?.let {
@@ -159,28 +168,34 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                                 setDataSource(it)
                                 prepare()
                             }
-                            todo_detail_multimedia_data_audio_video_play_btn.setOnClickListener {
-                                if(currentMediaPlayerPosition > 0) {
-                                    mediaPlayer.seekTo(currentMediaPlayerPosition)
-                                }
-                                mediaPlayer.start()
-                            }
-                            todo_detail_multimedia_data_audio_video_pause_btn.setOnClickListener {
-                                mediaPlayer.run {
-                                    pause()
-                                    currentMediaPlayerPosition = currentPosition
-                                }
-                            }
-                            todo_detail_multimedia_data_audio_video_stop_btn.setOnClickListener {
-                                mediaPlayer.run {
-                                    pause()
-                                    currentMediaPlayerPosition = 0
-                                }
-                            }
+                            setPlayPauseStopBtnOnClicked()
                         }
                     }
                     UriValidator.isVideoUri(it) -> {
+                        mediaPlayer.reset()
+                        changeMultimediaViewVisibility(MULTIMEDIA_TYPE_VIDEO)
 
+                        surfaceHolder = todo_detail_multimedia_data_video.holder.apply {
+                            addCallback(object : SurfaceHolder.Callback {
+                                override fun surfaceCreated(holder: SurfaceHolder?) {
+                                    Log.d(this@TodoDetailActivity.javaClass.simpleName, "surfaceCreated")
+                                    onVideoSelected(it)
+                                }
+
+                                override fun surfaceChanged(
+                                    holder: SurfaceHolder?,
+                                    format: Int,
+                                    width: Int,
+                                    height: Int
+                                ) {
+
+                                }
+
+                                override fun surfaceDestroyed(holder: SurfaceHolder?) {
+
+                                }
+                            })
+                        }
                     }
                     else -> {
                         toast("이미지 / 오디오 / 비디오 타입의 파일을 선택해주세요.")
@@ -189,7 +204,6 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             }
         }
     }
-
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menu?.let {
             menuInflater.inflate(R.menu.todo_detail_action, it)
@@ -294,7 +308,10 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                     todo_detail_multimedia_data_audio_video_stop_btn.visibility = View.GONE
                 }
                 MULTIMEDIA_TYPE_VIDEO -> {
-
+                    todo_detail_multimedia_data_audio_video_play_btn.visibility = View.GONE
+                    todo_detail_multimedia_data_audio_video_pause_btn.visibility = View.GONE
+                    todo_detail_multimedia_data_audio_video_stop_btn.visibility = View.GONE
+                    todo_detail_multimedia_data_video.visibility = View.GONE
                 }
             }
         }
@@ -309,11 +326,50 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 todo_detail_multimedia_data_audio_video_stop_btn.visibility = View.VISIBLE
             }
             MULTIMEDIA_TYPE_VIDEO -> {
-
+                todo_detail_multimedia_data_audio_video_play_btn.visibility = View.VISIBLE
+                todo_detail_multimedia_data_audio_video_pause_btn.visibility = View.VISIBLE
+                todo_detail_multimedia_data_audio_video_stop_btn.visibility = View.VISIBLE
+                todo_detail_multimedia_data_video.visibility = View.VISIBLE
             }
         }
 
         lastSelectedMultimediaType = multimediaType
+    }
+
+    private fun setPlayPauseStopBtnOnClicked() {
+        todo_detail_multimedia_data_audio_video_play_btn.setOnClickListener {
+            if(currentMediaPlayerPosition > 0) {
+                mediaPlayer.seekTo(currentMediaPlayerPosition)
+            }
+            mediaPlayer.start()
+        }
+        todo_detail_multimedia_data_audio_video_pause_btn.setOnClickListener {
+            mediaPlayer.run {
+                pause()
+                currentMediaPlayerPosition = currentPosition
+            }
+        }
+        todo_detail_multimedia_data_audio_video_stop_btn.setOnClickListener {
+            mediaPlayer.run {
+                pause()
+                currentMediaPlayerPosition = 0
+                seekTo(currentMediaPlayerPosition)
+            }
+        }
+    }
+
+    private fun onVideoSelected(uri: Uri) {
+        contentResolver.openFileDescriptor(uri, "r")?.fileDescriptor?.let {
+            mediaPlayer.run {
+                setDataSource(it)
+                setDisplay(surfaceHolder)
+                prepare()
+                setOnCompletionListener {
+                    it.seekTo(0)
+                }
+            }
+            setPlayPauseStopBtnOnClicked()
+        }
     }
 
     companion object {
