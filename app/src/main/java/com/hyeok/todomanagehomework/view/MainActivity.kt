@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         R.id.option_week -> {
                             currentDate = currentDate.minusWeeks(1)
-                            supportActionBar?.title = currentDate.monthValue.toString() + "월 " + currentDate.get(ChronoField.ALIGNED_WEEK_OF_MONTH)
+                            supportActionBar?.title = currentDate.monthValue.toString() + "월 " + currentDate.get(ChronoField.ALIGNED_WEEK_OF_MONTH) + "째주"
                         }
                         R.id.option_day -> {
                             currentDate = currentDate.minusDays(1)
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         R.id.option_week -> {
                             currentDate = currentDate.plusWeeks(1)
-                            supportActionBar?.title = currentDate.monthValue.toString() + "월 " + currentDate.get(ChronoField.ALIGNED_WEEK_OF_MONTH)
+                            supportActionBar?.title = currentDate.monthValue.toString() + "월 " + currentDate.get(ChronoField.ALIGNED_WEEK_OF_MONTH) + "째주"
                         }
                         R.id.option_day -> {
                             currentDate = currentDate.plusDays(1)
