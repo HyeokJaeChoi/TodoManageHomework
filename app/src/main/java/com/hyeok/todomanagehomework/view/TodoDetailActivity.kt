@@ -17,6 +17,7 @@ import android.view.SurfaceHolder
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.getSystemService
 import com.bumptech.glide.Glide
 import com.google.android.gms.location.LocationServices
@@ -41,6 +42,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.threeten.bp.LocalDateTime
+import splitties.alertdialog.appcompat.message
 import splitties.toast.toast
 import java.util.*
 
@@ -85,6 +87,7 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             }
             true
         }
+        supportActionBar?.title = "일정 상세"
     }
 
     override fun onDestroy() {
@@ -187,11 +190,23 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             }
             R.id.todo_detail_remove_btn -> {
                 existTodo?.let {
-                    dbHelper.delete(TodoContract.TodoEntry.TABLE_NAME, BaseColumns._ID + "=?", arrayOf(it.id.toString()))
+                    val alertDialogBuilder = AlertDialog.Builder(this).apply {
+                        title = "일정 삭제"
+                        message = "일정을 삭제하시겠습니까?"
+                        setPositiveButton("예") { dialog, which ->
+                            dbHelper.delete(TodoContract.TodoEntry.TABLE_NAME, BaseColumns._ID + "=?", arrayOf(it.id.toString()))
 
-                    toast("일정을 삭제하였습니다.")
-                    setResult(RESULT_OK)
-                    finish()
+                            toast("일정을 삭제하였습니다.")
+                            setResult(RESULT_OK)
+                            finish()
+                        }
+                        setNegativeButton("아니오") { dialog, which ->
+                            dialog.dismiss()
+                        }
+
+                    }
+
+                    alertDialogBuilder.create().show()
                 } ?: run {
                     toast("추가되지 않은 할일은 삭제할 수 없습니다.")
                 }
