@@ -1,6 +1,7 @@
 package com.hyeok.todomanagehomework.view
 
 import android.Manifest
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
 import android.location.Geocoder
@@ -29,6 +30,7 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import com.hyeok.todomanagehomework.R
+import com.hyeok.todomanagehomework.model.Todo
 import com.hyeok.todomanagehomework.util.file.DocumentUriConverter
 import com.hyeok.todomanagehomework.util.sqlite.DbHelper
 import com.hyeok.todomanagehomework.util.sqlite.TodoContract
@@ -81,31 +83,6 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                 }
             }
             true
-        }
-
-        dbHelper.select(
-            TodoContract.TodoEntry.TABLE_NAME,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        )?.let {
-            while(it.moveToNext()) {
-                val itemId = it.getLong(it.getColumnIndexOrThrow(BaseColumns._ID))
-                val title = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.TITLE))
-                val date = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.DATE))
-                val startTime = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.START_TIME))
-                val endTime = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.END_TIME))
-                val latitude = it.getDouble(it.getColumnIndexOrThrow(TodoContract.TodoEntry.LATITUDE))
-                val longitude = it.getDouble(it.getColumnIndexOrThrow(TodoContract.TodoEntry.LONGITUDE))
-                val content = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.CONTENT))
-                val multimediaContentUri = it.getString(it.getColumnIndexOrThrow(TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI))
-
-                Log.d(javaClass.simpleName, "${itemId} ${title} ${date} ${startTime} ${endTime} ${latitude} ${longitude} ${content} ${multimediaContentUri}")
-            }
-            it.close()
         }
     }
 
@@ -243,9 +220,16 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                     toast(saveFailMessage)
                 }
                 else {
-                    val selectedDate = todo_detail_date_picker.year.zeroFormat() + "-" + todo_detail_date_picker.month.zeroFormat() + "-" + todo_detail_date_picker.dayOfMonth.zeroFormat()
+                    val selectedDate = todo_detail_date_picker.year.zeroFormat() + "-" + todo_detail_date_picker.month.plus(1).zeroFormat() + "-" + todo_detail_date_picker.dayOfMonth.zeroFormat()
                     val startTime = todo_detail_start_time_picker.hour.zeroFormat() + ":" + todo_detail_start_time_picker.minute.zeroFormat()
                     val endTime = todo_detail_end_time_picker.hour.zeroFormat() + ":" + todo_detail_end_time_picker.minute.zeroFormat()
+                    val multimediaUri = if(this@TodoDetailActivity::lastSelectedMultimediaUri.isInitialized) {
+                        lastSelectedMultimediaUri.toString()
+                    }
+                    else {
+                        null
+                    }
+
                     val contentValues = ContentValues().apply {
                         put(TodoContract.TodoEntry.TITLE, todo_detail_title_input_filed.text.toString())
                         put(TodoContract.TodoEntry.DATE, selectedDate)
@@ -254,13 +238,13 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
                         put(TodoContract.TodoEntry.LATITUDE, userLocation.latitude)
                         put(TodoContract.TodoEntry.LONGITUDE, userLocation.longitude)
                         put(TodoContract.TodoEntry.CONTENT, todo_detail_memo_input_field.text.toString())
-                        if(this@TodoDetailActivity::lastSelectedMultimediaUri.isInitialized) {
-                            put(TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI, lastSelectedMultimediaUri.toString())
-                        }
+                        put(TodoContract.TodoEntry.MULTIMEDIA_CONTENT_URI, multimediaUri)
                     }
-
                     dbHelper.insert(TodoContract.TodoEntry.TABLE_NAME, contentValues)
-                    toast(getString(R.string.todo_detail_save_success))
+
+                    toast("일정을 저장하였습니다.")
+                    setResult(RESULT_OK)
+                    finish()
                 }
             }
             R.id.todo_detail_remove_btn -> {
@@ -423,8 +407,8 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
             return getString(R.string.todo_detail_save_fail_title_empty)
         }
         else if(todo_detail_date_picker.year < currentDateTime.year
-            || todo_detail_date_picker.month < currentDateTime.monthValue.minus(1)
-            || todo_detail_date_picker.dayOfMonth < currentDateTime.dayOfMonth) {
+            && todo_detail_date_picker.month < currentDateTime.monthValue.minus(1)
+            && todo_detail_date_picker.dayOfMonth < currentDateTime.dayOfMonth) {
             return getString(R.string.todo_detail_save_fail_date_is_before_than_current)
         }
         else if(todo_detail_start_time_picker.hour > todo_detail_end_time_picker.hour
@@ -452,5 +436,6 @@ class TodoDetailActivity : AppCompatActivity(), View.OnClickListener, OnMapReady
         const val MULTIMEDIA_TYPE_IMAGE = 101
         const val MULTIMEDIA_TYPE_AUDIO = 102
         const val MULTIMEDIA_TYPE_VIDEO = 103
+        const val INSERTED_TODO = "insertedTodo"
     }
 }
